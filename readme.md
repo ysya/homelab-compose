@@ -64,7 +64,7 @@ docker compose up -d
 ```bash
 # 使用 rclone 後端連接 Google Drive
 docker exec -it kopia-server kopia repository create rclone \
-  --remote-path="gdrive:/kopia-backup"
+  --remote-path="GDriveTR:/kopia-backup"
 
 # gdrive 是你在 rclone 設定的 remote 名稱
 # /kopia-backup 是 Google Drive 上的資料夾路徑
@@ -94,10 +94,10 @@ kopia snapshot create /source/homelab-data
 
 ### 6. 存取 Web UI
 
-| 服務 | URL | 說明 |
-|------|-----|------|
-| Dockge | http://localhost:5001 | Docker 管理 |
-| Kopia | http://localhost:51515 | 備份管理 |
+| 服務   | URL                    | 說明        |
+| ------ | ---------------------- | ----------- |
+| Dockge | http://localhost:5001  | Docker 管理 |
+| Kopia  | http://localhost:51515 | 備份管理    |
 
 ## 目錄結構
 
@@ -117,10 +117,24 @@ homelab-compose/
 
 ### Kopia 備份什麼？
 
-| 路徑 | 內容 |
-|------|------|
-| `/source/homelab-data` | Dockge 資料 + Kopia 設定 |
-| `/source/stacks` | 所有 Docker Compose stacks |
+| 路徑                   | 內容                       |
+| ---------------------- | -------------------------- |
+| `/source/homelab-data` | Dockge 資料 + Kopia 設定   |
+| `/source/stacks`       | 所有 Docker Compose stacks |
+
+### 預設備份排程
+
+步驟 5 設定的 policy 會讓 Kopia **每 6 小時自動備份一次**：
+
+| 設定                     | 說明                           |
+| ------------------------ | ------------------------------ |
+| `--snapshot-interval=6h` | 每 6 小時自動執行一次 snapshot |
+| `--keep-hourly=24`       | 保留最近 24 個小時級別的備份   |
+| `--keep-daily=7`         | 保留最近 7 天的每日備份        |
+| `--keep-weekly=4`        | 保留最近 4 週的每週備份        |
+| `--keep-monthly=6`       | 保留最近 6 個月的每月備份      |
+
+Kopia 使用**增量去重備份**：只上傳變更的部分，但每個 snapshot 都可獨立還原。
 
 ### 備份流程
 

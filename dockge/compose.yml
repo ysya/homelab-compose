@@ -1,0 +1,23 @@
+# ============================================
+# Dockge Standalone
+# Docker Compose 管理介面
+# ============================================
+
+services:
+  dockge:
+    image: louislam/dockge:1
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/dockge:/app/data
+      # Stacks Directory
+      # ⚠️ 1. FULL path only. No relative path (MUST)
+      # ⚠️ 2. Left Stacks Path === Right Stacks Path (MUST)
+      - ${STACKS_DIR}:${STACKS_DIR}
+    environment:
+      - DOCKGE_ENABLE_CONSOLE=true
+      - DOCKGE_STACKS_DIR=${STACKS_DIR}
+      - TZ=${TZ:-Asia/Taipei}

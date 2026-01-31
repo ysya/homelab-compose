@@ -1,0 +1,56 @@
+# ============================================
+# Kopia Standalone Server
+# 獨立備份伺服器，供多台主機使用
+# ============================================
+
+services:
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia-server
+    hostname: kopia-server
+    restart: unless-stopped
+    ports:
+      - "51515:51515"
+    command:
+      - server
+      - start
+      - --disable-csrf-token-checks
+      - --insecure
+      - --address=0.0.0.0:51515
+      - --server-username=${KOPIA_SERVER_USERNAME:-admin}
+      - --server-password=${KOPIA_SERVER_PASSWORD:?KOPIA_SERVER_PASSWORD is required}
+      # 允許其他主機連接
+      - --server-control-username=${KOPIA_SERVER_USERNAME:-admin}
+      - --server-control-password=${KOPIA_SERVER_PASSWORD:?KOPIA_SERVER_PASSWORD is required}
+    environment:
+      KOPIA_PASSWORD: ${KOPIA_REPO_PASSWORD:?KOPIA_REPO_PASSWORD is required}
+      TZ: ${TZ:-Asia/Taipei}
+      USER: root
+      RCLONE_CONFIG: /app/rclone/rclone.conf
+    volumes:
+      # Kopia 設定
+      - ./data/kopia/config:/app/config
+      - ./data/kopia/cache:/app/cache
+      - ./data/kopia/logs:/app/logs
+      # rclone 設定
+      - ./data/rclone:/app/rclone
+    healthcheck:
+      test: ["CMD", "kopia", "repository", "status"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================================
+  # rclone - 設定雲端儲存
+  # ============================================
+  rclone:
+    image: rclone/rclone:latest
+    container_name: rclone-config
+    profiles:
+      - setup
+    stdin_open: true
+    tty: true
+    command: config
+    volumes:
+      - ./data/rclone:/config/rclone
