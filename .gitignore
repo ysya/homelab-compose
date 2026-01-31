@@ -8,6 +8,7 @@ Thumbs.db
 
 # === 服務資料 ===
 data/
+stacks/
 
 # === 日誌 ===
 *.log

@@ -24,23 +24,19 @@ Dockge + Kopia 的 Homelab 基礎設施管理與備份方案。
 
 ## 快速開始
 
-### 1. 複製環境變數
+### 1. 快速設定環境變數
 
 ```bash
-cp .env.example .env
+# 一鍵設定（自動填入路徑和產生密碼）
+cp .env.example .env && \
+sed -i "s|STACKS_DIR=.*|STACKS_DIR=$(pwd)/stacks|" .env && \
+sed -i "s|KOPIA_REPO_PASSWORD=.*|KOPIA_REPO_PASSWORD=$(openssl rand -base64 32)|" .env && \
+sed -i "s|KOPIA_SERVER_PASSWORD=.*|KOPIA_SERVER_PASSWORD=$(openssl rand -base64 16)|" .env
 ```
 
-### 2. 編輯 `.env`
+> ⚠️ 記得把 `KOPIA_REPO_PASSWORD` 備份到密碼管理器！
 
-```bash
-# 產生安全的密碼
-openssl rand -base64 32 # 用於 KOPIA_REPO_PASSWORD
-```
-
-重要設定：
-- `STACKS_DIR`: 你的 Docker Compose 檔案目錄（必須是完整路徑）
-
-### 3. 設定 Google Drive（rclone）
+### 2. 設定 Google Drive
 
 ```bash
 # 啟動 rclone 互動式設定
@@ -57,13 +53,13 @@ docker compose --profile setup run --rm rclone
 # 8. 完成後輸入 q 離開
 ```
 
-### 4. 啟動服務
+### 3. 啟動服務
 
 ```bash
 docker compose up -d
 ```
 
-### 5. 初始化 Kopia Repository（使用 Google Drive）
+### 4. 初始化 Kopia Repository
 
 ```bash
 # 使用 rclone 後端連接 Google Drive
@@ -74,7 +70,7 @@ docker exec -it kopia-server kopia repository create rclone \
 # /kopia-backup 是 Google Drive 上的資料夾路徑
 ```
 
-### 6. 設定備份 Policy
+### 5. 設定備份 Policy
 
 ```bash
 docker exec -it kopia-server sh
@@ -96,7 +92,7 @@ kopia snapshot create /source/stacks
 kopia snapshot create /source/homelab-data
 ```
 
-### 7. 存取 Web UI
+### 6. 存取 Web UI
 
 | 服務 | URL | 說明 |
 |------|-----|------|
@@ -110,10 +106,11 @@ homelab-compose/
 ├── docker-compose.yml     # 服務定義
 ├── .env.example           # 環境變數範本
 ├── .env                   # 你的設定（不進 Git）
-└── data/                  # 服務資料（bind mount）
-    ├── dockge/           # Dockge 資料
-    ├── kopia/            # Kopia 設定
-    └── rclone/           # rclone 設定（含 Google 授權）
+├── data/                  # 服務資料（不進 Git）
+│   ├── dockge/
+│   ├── kopia/
+│   └── rclone/
+└── stacks/               # Docker Compose stacks（不進 Git）
 ```
 
 ## 備份策略
