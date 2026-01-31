@@ -1,0 +1,83 @@
+# ============================================
+# Homelab Compose
+# Dockge (Docker 管理) + Kopia (備份)
+# ============================================
+
+services:
+  # ============================================
+  # Dockge - Docker Compose 管理介面
+  # Web UI: http://localhost:5001
+  # ============================================
+  dockge:
+    image: louislam/dockge:1
+    container_name: dockge
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/dockge:/app/data
+      # Stacks Directory
+      # ⚠️ 1. FULL path only. No relative path (MUST)
+      # ⚠️ 2. Left Stacks Path === Right Stacks Path (MUST)
+      - ${STACKS_DIR}:${STACKS_DIR}
+    environment:
+      - DOCKGE_ENABLE_CONSOLE=true
+      - DOCKGE_STACKS_DIR=${STACKS_DIR}
+
+  # ============================================
+  # Kopia Server - 備份伺服器
+  # Web UI: http://localhost:51515
+  # ============================================
+  kopia:
+    image: kopia/kopia:latest
+    container_name: kopia-server
+    hostname: kopia-server
+    restart: unless-stopped
+    ports:
+      - "51515:51515"
+    command:
+      - server
+      - start
+      - --disable-csrf-token-checks
+      - --insecure
+      - --address=0.0.0.0:51515
+      - --server-username=${KOPIA_SERVER_USERNAME:-admin}
+      - --server-password=${KOPIA_SERVER_PASSWORD:?KOPIA_SERVER_PASSWORD is required}
+    environment:
+      KOPIA_PASSWORD: ${KOPIA_REPO_PASSWORD:?KOPIA_REPO_PASSWORD is required}
+      TZ: ${TZ:-Asia/Taipei}
+      USER: root
+      # rclone 設定路徑
+      RCLONE_CONFIG: /app/rclone/rclone.conf
+    volumes:
+      # Kopia 設定
+      - ./data/kopia/config:/app/config
+      - ./data/kopia/cache:/app/cache
+      - ./data/kopia/logs:/app/logs
+      # rclone 設定（用於 Google Drive 等雲端備份）
+      - ./data/rclone:/app/rclone
+      # === 備份來源（唯讀）===
+      - ./data:/source/homelab-data:ro
+      - ${STACKS_DIR}:/source/stacks:ro
+    healthcheck:
+      test: ["CMD", "kopia", "repository", "status"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================================
+  # rclone - 用於設定雲端儲存（Google Drive 等）
+  # 只在初始設定時使用
+  # ============================================
+  rclone:
+    image: rclone/rclone:latest
+    container_name: rclone-config
+    profiles:
+      - setup # 只在需要時啟動：docker compose --profile setup run rclone
+    stdin_open: true
+    tty: true
+    command: config
+    volumes:
+      - ./data/rclone:/config/rclone

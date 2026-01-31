@@ -1,2 +1,19 @@
+# === OS ===
 .DS_Store
+Thumbs.db
+
+# === 環境變數（含敏感資訊）===
 .env
+*.env.local
+
+# === 服務資料 ===
+data/
+
+# === 日誌 ===
+*.log
+
+# === 編輯器 ===
+.vscode/
+.idea/
+*.swp
+*.swo
